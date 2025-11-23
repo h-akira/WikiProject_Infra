@@ -1,23 +1,21 @@
-# Finance Project Infrastructure CDK
+# Wiki Project Infrastructure CDK
 
-AWS CDK (Python)によるFinance Projectのインフラストラクチャ定義です。
+AWS CDK (Python)によるWiki Projectのインフラストラクチャ定義です。
 
 ## 構成
 
 ```
-FinanceProject_Infra/
+WikiProject_Infra/
 ├── stacks/
-│   ├── common/
-│   │   └── cognito_stack.py      # Cognito User Pool & Client
-│   └── dashboard/
-│       ├── main_stack.py         # S3 + CloudFront
-│       └── dynamodb_stack.py     # DynamoDB Table
-├── app.py                        # CDKアプリケーションエントリーポイント
-├── buildspec.yml                 # CodeBuild用ビルド仕様
-├── config.json                   # 設定ファイル（環境変数、リソース名など）
-├── config_sample.json            # 設定ファイルサンプル（CodeBuildで使用）
-├── cdk.json                      # CDK設定
-└── requirements.txt              # Python依存関係
+│   ├── cognito_stack.py         # Cognito User Pool & Client
+│   ├── dsql_stack.py            # Aurora DSQL Cluster
+│   └── main_stack.py            # S3 + CloudFront
+├── app.py                       # CDKアプリケーションエントリーポイント
+├── buildspec.yml                # CodeBuild用ビルド仕様
+├── config.json                  # 設定ファイル（環境変数、リソース名など）
+├── config_sample.json           # 設定ファイルサンプル（CodeBuildで使用）
+├── cdk.json                     # CDK設定
+└── requirements.txt             # Python依存関係
 ```
 
 ## セットアップ
@@ -27,7 +25,7 @@ FinanceProject_Infra/
 - Python 3.11以上
 - Node.js（CDK CLI用）
 - AWS CLI設定済み（`aws configure`または`~/.aws/credentials`）
-- AWS_PROFILE=financeの設定（本プロジェクトでは`finance`プロファイルを使用）
+- AWS_PROFILE=wikiの設定（本プロジェクトでは`wiki`プロファイルを使用）
 
 ### 1. CDK CLIのインストール
 
@@ -58,11 +56,11 @@ CDKを初めて使用する環境では、`cdk bootstrap`を実行する必要�
 まず、最小権限のカスタムポリシーをデプロイします：
 
 ```bash
-cd /Users/hakira/Programs/wambda-develop/FinanceProject_Infra/init
+cd /Users/hakira/Programs/wambda-develop/WikiProject_Infra/init
 
-AWS_PROFILE=finance aws cloudformation deploy \
+AWS_PROFILE=wiki aws cloudformation deploy \
   --template-file cfn-execution-policies.yaml \
-  --stack-name stack-finance-infra-cfn-execution-policies \
+  --stack-name stack-wiki-infra-cfn-execution-policies \
   --capabilities CAPABILITY_NAMED_IAM \
   --region ap-northeast-1
 ```
@@ -71,14 +69,14 @@ AWS_PROFILE=finance aws cloudformation deploy \
 
 ```bash
 # ポリシーARNを動的に取得
-POLICY_ARN=$(AWS_PROFILE=finance aws cloudformation describe-stacks \
-  --stack-name stack-finance-infra-cfn-execution-policies \
+POLICY_ARN=$(AWS_PROFILE=wiki aws cloudformation describe-stacks \
+  --stack-name stack-wiki-infra-cfn-execution-policies \
   --region ap-northeast-1 \
   --query 'Stacks[0].Outputs[?OutputKey==`PolicyArn`].OutputValue' \
   --output text)
 
 # Bootstrap実行
-AWS_PROFILE=finance cdk bootstrap \
+AWS_PROFILE=wiki cdk bootstrap \
   --cloudformation-execution-policies ${POLICY_ARN} \
   --region ap-northeast-1
 ```
@@ -94,14 +92,14 @@ AWS_PROFILE=finance cdk bootstrap \
   "account": null,
   "region": "ap-northeast-1",
   "cognito": {
-    "user_pool_name": "user-pool-finance-common",
-    "client_name": "client-finance-common",
+    "user_pool_name": "user-pool-wiki-common",
+    "client_name": "client-wiki-common",
     "ssm_prefix": "/Cognito"
   },
   "dashboard": {
-    "domain_name": "dashboard.finance.h-akira.net",
+    "domain_name": "dashboard.wiki.h-akira.net",
     "acm_certificate_arn": "arn:aws:acm:us-east-1:XXXXXXXXXXXX:certificate/...",
-    "s3_bucket_name": "s3-finance-dashboard-contents",
+    "s3_bucket_name": "s3-wiki-dashboard-contents",
     "api_gateway": {
       "domain_name": "XXXXXXXXXX.execute-api.ap-northeast-1.amazonaws.com",
       "stage_name": "stage-01"
@@ -109,15 +107,15 @@ AWS_PROFILE=finance cdk bootstrap \
     "codebuild": {
       "codestar_connection_arn": "arn:aws:codeconnections:...",
       "backend": {
-        "project_name": "build-finance-dashboard-backend",
+        "project_name": "build-wiki-dashboard-backend",
         "github_owner": "h-akira",
-        "github_repo": "FinanceDashboardProject_Backend",
+        "github_repo": "WikiDashboardProject_Backend",
         "branch": "main"
       },
       "frontend": {
-        "project_name": "build-finance-dashboard-frontend",
+        "project_name": "build-wiki-dashboard-frontend",
         "github_owner": "h-akira",
-        "github_repo": "FinanceDashboardProject_Frontend",
+        "github_repo": "WikiDashboardProject_Frontend",
         "branch": "main"
       }
     }
@@ -135,9 +133,9 @@ cdk ls
 
 出力例:
 ```
-stack-finance-common-infra-cognito
-stack-finance-dashboard-infra-dynamodb
-stack-finance-dashboard-infra-main
+stack-wiki-infra-cognito
+stack-wiki-infra-dsql
+stack-wiki-infra-main
 ```
 
 ### CloudFormationテンプレートの生成
@@ -150,24 +148,24 @@ cdk synth
 
 ```bash
 # Cognitoスタック
-AWS_PROFILE=finance cdk deploy stack-finance-common-infra-cognito
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-cognito
 
-# DynamoDBスタック
-AWS_PROFILE=finance cdk deploy stack-finance-dashboard-infra-dynamodb
+# DSQLスタック
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-dsql
 
-# Dashboard Mainスタック
-AWS_PROFILE=finance cdk deploy stack-finance-dashboard-infra-main
+# Mainスタック
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-main
 
 # 全スタック一括デプロイ
-AWS_PROFILE=finance cdk deploy --all
+AWS_PROFILE=wiki cdk deploy --all
 ```
 
 ### スタックの削除
 
 ```bash
-AWS_PROFILE=finance cdk destroy stack-finance-dashboard-infra-main
-AWS_PROFILE=finance cdk destroy stack-finance-dashboard-infra-dynamodb
-AWS_PROFILE=finance cdk destroy stack-finance-common-infra-cognito
+AWS_PROFILE=wiki cdk destroy stack-wiki-infra-main
+AWS_PROFILE=wiki cdk destroy stack-wiki-infra-dsql
+AWS_PROFILE=wiki cdk destroy stack-wiki-infra-cognito
 ```
 
 ## CodeBuildによる自動デプロイ
@@ -181,13 +179,13 @@ CodeBuild実行時、`buildspec.yml`が以下の処理を自動実行します�
 1. **config.jsonの自動生成**
    - `config_sample.json`を`config.json`にコピー
    - Parameter Storeから必要な値を取得：
-     - `/Common/ACM/arn` → ACM証明書ARN
-     - `/Dashboard/S3/contents/bucket_name` → S3バケット名
-     - `/Dashboard/DynamoDB/main/table_name` → DynamoDBテーブル名
+     - `/ACM/arn` → ACM証明書ARN
+     - `/S3/contents/bucket_name` → S3バケット名
+     - `/CloudFormation/app/stack_name` → アプリケーションスタック名
    - プレースホルダーを実際の値に置き換え
      - `REPLACE_WITH_ACM_CERTIFICATE_ARN` → ACM証明書ARN
      - `REPLACE_WITH_S3_BUCKET_NAME` → S3バケット名
-     - `REPLACE_WITH_DYNAMODB_TABLE_NAME` → DynamoDBテーブル名
+     - `REPLACE_WITH_APP_STACK_NAME` → アプリケーションスタック名
 
 2. **CDKデプロイ**
    - Python仮想環境(.venv)の作成
@@ -201,30 +199,30 @@ CodeBuildで自動デプロイするには、以下の設定が必要です：
 1. **Parameter Storeに必要な値を保存**
    ```bash
    # ACM証明書ARN
-   AWS_PROFILE=finance aws ssm put-parameter \
-     --name "/Common/ACM/arn" \
+   AWS_PROFILE=wiki aws ssm put-parameter \
+     --name "/ACM/arn" \
      --value "arn:aws:acm:us-east-1:XXXXXXXXXXXX:certificate/XXXXXXXX" \
      --type String \
      --region ap-northeast-1
 
    # S3バケット名（グローバルに一意である必要があるため、Parameter Storeで管理）
-   AWS_PROFILE=finance aws ssm put-parameter \
-     --name "/Dashboard/S3/contents/bucket_name" \
-     --value "s3-finance-dashboard-contents-XXXXXXXXXXXX" \
+   AWS_PROFILE=wiki aws ssm put-parameter \
+     --name "/S3/contents/bucket_name" \
+     --value "s3-wiki-contents-XXXXXXXXXXXX" \
      --type String \
      --region ap-northeast-1
 
-   # DynamoDBテーブル名
-   AWS_PROFILE=finance aws ssm put-parameter \
-     --name "/Dashboard/DynamoDB/main/table_name" \
-     --value "table-finance-dashboard-main" \
+   # アプリケーションスタック名
+   AWS_PROFILE=wiki aws ssm put-parameter \
+     --name "/CloudFormation/app/stack_name" \
+     --value "stack-dummy-app" \
      --type String \
      --region ap-northeast-1
    ```
 
 2. **CodeBuildプロジェクトの作成**
 
-   `FinanceProject_CICD`リポジトリの`codebuild-infra.yaml`を使用してCodeBuildプロジェクトを作成してください。
+   `WikiProject_CICD`リポジトリの`codebuild-infra.yaml`を使用してCodeBuildプロジェクトを作成してください。
 
 3. **GitHubへのPush**
 
@@ -237,26 +235,24 @@ CodeBuildで自動デプロイするには、以下の設定が必要です：
 | config.json | 手動作成・編集 | buildspec.ymlで自動生成 |
 | ACM ARN | config.jsonに直接記述 | Parameter Storeから取得 |
 | S3バケット名 | config.jsonに直接記述 | Parameter Storeから取得 |
-| DynamoDBテーブル名 | config.jsonに直接記述 | Parameter Storeから取得 |
+| アプリスタック名 | config.jsonに直接記述 | Parameter Storeから取得 |
 | デプロイ | `cdk deploy`を手動実行 | GitHubへのPushで自動実行 |
 
 ## 主な機能
 
-### stack-finance-common-infra-cognito
+### stack-wiki-infra-cognito
 - Cognito User Pool作成
 - Cognito User Pool Client作成（シークレット付き）
 - SSM Parameter Storeへの認証情報保存
 - パスワードポリシー設定（最小8文字、大文字/小文字/数字/記号必須）
 - トークン有効期限設定（Access/ID: 30分、Refresh: 5日）
 
-### stack-finance-dashboard-infra-dynamodb
-- DynamoDB Table作成
-- パーティションキー: `pk`、ソートキー: `sk`
-- オンデマンド課金モード
-- ポイントインタイムリカバリ有効化
-- 削除保護（RemovalPolicy.RETAIN）
+### stack-wiki-infra-dsql
+- Aurora DSQL Cluster作成
+- クラスタエンドポイントをSSM Parameter Storeに保存
+- 削除保護有効化
 
-### stack-finance-dashboard-infra-main
+### stack-wiki-infra-main
 - S3バケット作成（フロントエンド静的ファイル用）
 - CloudFront Distribution作成
 - Origin Access Control (OAC)設定
@@ -321,7 +317,7 @@ Dashboard MainスタックはCloudFrontのOriginとしてAPI Gatewayを使用し
 ```json
 {
   "dashboard": {
-    "backend_stack_name": "stack-finance-dashboard-backend-main",
+    "backend_stack_name": "stack-wiki-dashboard-backend-main",
     ...
   }
 }
@@ -334,8 +330,8 @@ Dashboard MainスタックはCloudFrontのOriginとしてAPI Gatewayを使用し
 **SAMテンプレート（template.yaml）の設定**:
 ```yaml
 Outputs:
-  FinanceDashboardApiUrl:
-    Description: API Gateway endpoint URL for stage-01 for Finance Dashboard Backend
+  WikiDashboardApiUrl:
+    Description: API Gateway endpoint URL for stage-01 for Wiki Dashboard Backend
     Value: !Sub "https://${MainAPIGateway}.execute-api.${AWS::Region}.amazonaws.com/stage-01/"
     Export:
       Name: !Sub "${AWS::StackName}-ApiUrl"
@@ -350,24 +346,24 @@ CDKはSAMスタックの`${StackName}-ApiUrl`というExport値を`Fn::ImportVal
 依存関係を考慮した推奨デプロイ順序：
 
 1. **Cognito** → 認証基盤（必須）
-2. **DynamoDB** → データストア
-3. **Backend（SAM）** → API Gateway作成（CodeBuildまたは手動）
-4. **Dashboard Main** → S3 + CloudFront（SAMスタックからAPI Gateway URLを自動取得）
+2. **DSQL** → データベース
+3. **App（SAM）** → API Gateway作成（ダミーアプリまたは実際のアプリ）
+4. **Main** → S3 + CloudFront（SAMスタックからAPI Gateway URLを自動取得）
 
 ```bash
 # 1. Cognito
-AWS_PROFILE=finance cdk deploy stack-finance-common-infra-cognito
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-cognito
 
-# 2. DynamoDB
-AWS_PROFILE=finance cdk deploy stack-finance-dashboard-infra-dynamodb
+# 2. DSQL
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-dsql
 
-# 3. Backend（SAM）をデプロイ
-# CodeBuildの場合：
-aws codebuild start-build --project-name build-finance-dashboard-backend --region ap-northeast-1
-# または手動の場合：
-cd FinanceDashboardProject_Backend && sam build && sam deploy
+# 3. App（SAM）をデプロイ
+# ダミーアプリの場合：
+cd dummy_app && sam build && sam deploy
+# または実際のアプリの場合：
+cd WikiProject_App && sam build && sam deploy
 
-# 4. Dashboard Main（SAMスタックからAPI Gateway URLを自動インポート）
-AWS_PROFILE=finance cdk deploy stack-finance-dashboard-infra-main
+# 4. Main（SAMスタックからAPI Gateway URLを自動インポート）
+AWS_PROFILE=wiki cdk deploy stack-wiki-infra-main
 ```
 

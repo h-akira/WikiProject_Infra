@@ -5,7 +5,7 @@ import aws_cdk as cdk
 
 from stacks import (
   CognitoStack,
-  DashboardMainStack,
+  MainStack,
   DSQLStack,
 )
 
@@ -24,13 +24,13 @@ app = cdk.App()
 # Deploy this first
 cognito_stack = CognitoStack(
   app,
-  "stack-finance-common-infra-cognito",
+  "stack-wiki-infra-cognito",
   user_pool_name=config["cognito"]["user_pool_name"],
   client_name=config["cognito"]["client_name"],
   ssm_prefix=config["cognito"]["ssm_prefix"],
   environment=environment,
   env=cdk.Environment(account=account, region=region),
-  description="Cognito User Pool and Client for Finance Project",
+  description="Cognito User Pool and Client for Wiki Project",
 )
 
 # Stack 2: Aurora DSQL Cluster for Wiki Project
@@ -46,7 +46,7 @@ dsql_stack = DSQLStack(
 # Stack 3: Main (S3 + CloudFront)
 # Deploy this after SAM stack is deployed
 # API Gateway URL is automatically imported from SAM stack output
-main_stack = DashboardMainStack(
+main_stack = MainStack(
   app,
   "stack-wiki-infra-main",
   domain_name=config["main"]["domain_name"],

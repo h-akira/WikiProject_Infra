@@ -2,29 +2,29 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   IAM Policies for CDK CloudFormation Execution Role
   This creates multiple managed policies with minimum required permissions
-  for CDK to deploy Finance Project infrastructure.
+  for CDK to deploy Wiki Project infrastructure.
 
   Usage:
     1. Deploy this stack first:
-       AWS_PROFILE=finance aws cloudformation deploy \
+       AWS_PROFILE=wiki aws cloudformation deploy \
          --template-file cfn-execution-policies.yaml \
-         --stack-name stack-finance-infra-cfn-execution-policies \
+         --stack-name stack-wiki-infra-cfn-execution-policies \
          --capabilities CAPABILITY_NAMED_IAM \
          --region ap-northeast-1
 
     2. Use the policy ARNs for CDK bootstrap:
-       AWS_PROFILE=finance cdk bootstrap \
+       AWS_PROFILE=wiki cdk bootstrap \
          --cloudformation-execution-policies \
-           arn:aws:iam::XXXXXXXXXXXX:policy/policy-finance-infra-cfn-exec-cognito \
-           arn:aws:iam::XXXXXXXXXXXX:policy/policy-finance-infra-cfn-exec-storage \
-           arn:aws:iam::XXXXXXXXXXXX:policy/policy-finance-infra-cfn-exec-compute \
-           arn:aws:iam::XXXXXXXXXXXX:policy/policy-finance-infra-cfn-exec-iam \
+           arn:aws:iam::XXXXXXXXXXXX:policy/policy-wiki-infra-cfn-exec-cognito-dsql \
+           arn:aws:iam::XXXXXXXXXXXX:policy/policy-wiki-infra-cfn-exec-storage \
+           arn:aws:iam::XXXXXXXXXXXX:policy/policy-wiki-infra-cfn-exec-config \
+           arn:aws:iam::XXXXXXXXXXXX:policy/policy-wiki-infra-cfn-exec-iam \
          --region ap-northeast-1
 
 Parameters:
   PolicyNamePrefix:
     Type: String
-    Default: policy-finance-infra-cfn-exec
+    Default: policy-wiki-infra-cfn-exec
     Description: Prefix for IAM policy names
 
 Resources:
@@ -361,6 +361,6 @@ Outputs:
   BootstrapCommand:
     Description: Command to use these policies with CDK bootstrap
     Value: !Sub |
-      AWS_PROFILE=finance cdk bootstrap \
+      AWS_PROFILE=wiki cdk bootstrap \
         --cloudformation-execution-policies ${CognitoDSQLPolicy} ${StoragePolicy} ${ConfigPolicy} ${IAMPolicy} \
         --region ${AWS::Region}

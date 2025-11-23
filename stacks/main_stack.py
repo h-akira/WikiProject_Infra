@@ -13,10 +13,9 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-class DashboardMainStack(Stack):
+class MainStack(Stack):
   """
-  S3 + CloudFront Stack for Finance Dashboard Frontend
-  Equivalent to Terraform: FinanceProject_Infra/dashboard/main
+  S3 + CloudFront Stack for Wiki Project Frontend
   """
 
   def __init__(
