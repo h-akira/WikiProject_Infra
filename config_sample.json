@@ -1,0 +1,23 @@
+{
+  "account": null,
+  "region": "ap-northeast-1",
+  "environment": "production",
+
+  "cognito": {
+    "user_pool_name": "user-pool-wiki",
+    "client_name": "client-wiki",
+    "ssm_prefix": "/Cognito"
+  },
+
+  "dsql": {
+    "ssm_prefix": "/DSQL"
+  },
+
+  "main": {
+    "domain_name": "wiki.h-akira.net",
+    "acm_certificate_arn": "REPLACE_WITH_ACM_CERTIFICATE_ARN",
+    "s3_bucket_name": "REPLACE_WITH_S3_BUCKET_NAME",
+    "s3_origin_path": "/CloudFront",
+    "app_stack_name": "REPLACE_WITH_APP_STACK_NAME"
+  }
+}

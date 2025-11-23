@@ -1,0 +1,93 @@
+version: 0.2
+
+env:
+  variables:
+    # CDK deployment settings
+    CDK_DEFAULT_REGION: "ap-northeast-1"
+    CDK_EXECUTION_POLICIES_STACK_NAME: "stack-wiki-infra-cfn-execution-policies"
+  parameter-store:
+    ACM_ARN: /ACM/arn
+    S3_CONTENTS_BUCKET_NAME: /S3/contents/bucket_name
+    APP_STACK_NAME: /CloudFormation/app/stack_name
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+      nodejs: 20
+    commands:
+      - echo "Installing CDK CLI..."
+      - npm install -g aws-cdk
+      - echo "Creating Python virtual environment..."
+      - python -m venv .venv
+      - echo "Installing Python dependencies in virtual environment..."
+      - .venv/bin/pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo "Creating config.json from config_sample.json..."
+      - cp config_sample.json config.json
+      - echo "Replacing ACM certificate ARN in config.json..."
+      - sed -i "s|REPLACE_WITH_ACM_CERTIFICATE_ARN|${ACM_ARN}|g" config.json
+      - echo "Replacing S3 contents bucket name in config.json..."
+      - sed -i "s|REPLACE_WITH_S3_BUCKET_NAME|${S3_CONTENTS_BUCKET_NAME}|g" config.json
+      - echo "Replacing App stack name in config.json..."
+      - sed -i "s|REPLACE_WITH_APP_STACK_NAME|${APP_STACK_NAME}|g" config.json
+      - echo "Checking CDK version..."
+      - cdk --version
+      - echo "Checking if CDK bootstrap is required..."
+      - |
+        if ! aws cloudformation describe-stacks --stack-name CDKToolkit --region ${CDK_DEFAULT_REGION} 2>/dev/null; then
+          echo "CDKToolkit stack not found. Running CDK bootstrap..."
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+          # Get all policy ARNs from the CloudFormation stack outputs
+          COGNITO_DSQL_ARN=$(aws cloudformation describe-stacks \
+            --stack-name ${CDK_EXECUTION_POLICIES_STACK_NAME} \
+            --region ${CDK_DEFAULT_REGION} \
+            --query 'Stacks[0].Outputs[?OutputKey==`CognitoDSQLPolicyArn`].OutputValue' \
+            --output text)
+
+          STORAGE_ARN=$(aws cloudformation describe-stacks \
+            --stack-name ${CDK_EXECUTION_POLICIES_STACK_NAME} \
+            --region ${CDK_DEFAULT_REGION} \
+            --query 'Stacks[0].Outputs[?OutputKey==`StoragePolicyArn`].OutputValue' \
+            --output text)
+
+          CONFIG_ARN=$(aws cloudformation describe-stacks \
+            --stack-name ${CDK_EXECUTION_POLICIES_STACK_NAME} \
+            --region ${CDK_DEFAULT_REGION} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ConfigPolicyArn`].OutputValue' \
+            --output text)
+
+          IAM_ARN=$(aws cloudformation describe-stacks \
+            --stack-name ${CDK_EXECUTION_POLICIES_STACK_NAME} \
+            --region ${CDK_DEFAULT_REGION} \
+            --query 'Stacks[0].Outputs[?OutputKey==`IAMPolicyArn`].OutputValue' \
+            --output text)
+
+          echo "Using CloudFormation execution policies from stack: ${CDK_EXECUTION_POLICIES_STACK_NAME}"
+          echo "  - Cognito/DSQL Policy: ${COGNITO_DSQL_ARN}"
+          echo "  - Storage Policy: ${STORAGE_ARN}"
+          echo "  - Config Policy: ${CONFIG_ARN}"
+          echo "  - IAM Policy: ${IAM_ARN}"
+
+          cdk bootstrap \
+            --cloudformation-execution-policies "${COGNITO_DSQL_ARN},${STORAGE_ARN},${CONFIG_ARN},${IAM_ARN}" \
+            --region ${CDK_DEFAULT_REGION}
+        else
+          echo "CDKToolkit stack already exists. Skipping bootstrap."
+        fi
+      - echo "Listing CDK stacks..."
+      - cdk list
+
+  build:
+    commands:
+      - echo "Synthesizing CDK stacks..."
+      - cdk synth
+      - echo "Deploying all CDK stacks..."
+      - cdk deploy --all --require-approval never
+
+  post_build:
+    commands:
+      - echo "CDK deployment completed successfully!"
