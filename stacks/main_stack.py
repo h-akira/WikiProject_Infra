@@ -43,7 +43,7 @@ class MainStack(Stack):
 
     # Create S3 bucket for frontend hosting
     frontend_bucket = s3.Bucket(
-      self, "FrontendBucket",
+      self, "ContentsBucket",
       bucket_name=s3_bucket_name,
       block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
       removal_policy=RemovalPolicy.RETAIN,

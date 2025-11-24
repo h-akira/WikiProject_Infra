@@ -75,6 +75,10 @@ Resources:
               - dsql:GetCluster
               - dsql:UpdateCluster
               - dsql:ListClusters
+              - dsql:GetClusterPolicy
+              - dsql:PutClusterPolicy
+              - dsql:DeleteClusterPolicy
+              - dsql:GetVpcEndpointServiceName
             Resource: !Sub 'arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/*'
 
           - Sid: DSQLTags
@@ -328,6 +332,19 @@ Resources:
             Action:
               - iam:PassRole
             Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/stack-*'
+
+          - Sid: IAMServiceLinkedRole
+            Effect: Allow
+            Action:
+              - iam:CreateServiceLinkedRole
+              - iam:DeleteServiceLinkedRole
+              - iam:GetServiceLinkedRoleDeletionStatus
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/*'
+            Condition:
+              StringLike:
+                iam:AWSServiceName:
+                  - dsql.amazonaws.com
+                  - cloudfront.amazonaws.com
 
 Outputs:
   CognitoDSQLPolicyArn:

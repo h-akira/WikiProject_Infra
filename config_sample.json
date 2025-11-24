@@ -14,7 +14,7 @@
   },
 
   "main": {
-    "domain_name": "wiki.h-akira.net",
+    "domain_name": "REPLACE_WITH_DOMAIN_NAME",
     "acm_certificate_arn": "REPLACE_WITH_ACM_CERTIFICATE_ARN",
     "s3_bucket_name": "REPLACE_WITH_S3_BUCKET_NAME",
     "s3_origin_path": "/CloudFront",

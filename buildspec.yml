@@ -6,6 +6,7 @@ env:
     CDK_DEFAULT_REGION: "ap-northeast-1"
     CDK_EXECUTION_POLICIES_STACK_NAME: "stack-wiki-infra-cfn-execution-policies"
   parameter-store:
+    DOMAIN_NAME: /Domain
     ACM_ARN: /ACM/arn
     S3_CONTENTS_BUCKET_NAME: /S3/contents/bucket_name
     APP_STACK_NAME: /CloudFormation/app/stack_name
@@ -27,6 +28,8 @@ phases:
     commands:
       - echo "Creating config.json from config_sample.json..."
       - cp config_sample.json config.json
+      - echo "Replacing domain name in config.json..."
+      - sed -i "s|REPLACE_WITH_DOMAIN_NAME|${DOMAIN_NAME}|g" config.json
       - echo "Replacing ACM certificate ARN in config.json..."
       - sed -i "s|REPLACE_WITH_ACM_CERTIFICATE_ARN|${ACM_ARN}|g" config.json
       - echo "Replacing S3 contents bucket name in config.json..."
