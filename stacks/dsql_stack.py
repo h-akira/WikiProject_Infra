@@ -31,7 +31,7 @@ class DSQLStack(Stack):
     # Store DSQL Cluster endpoint in SSM Parameter Store
     ssm.StringParameter(
       self, "DSQLClusterEndpointParameter",
-      parameter_name=f"{ssm_prefix}/cluster_endpoint",
+      parameter_name=f"{ssm_prefix}/host",
       string_value=cluster.attr_endpoint,
       description="Aurora DSQL Cluster Endpoint for Wiki Project",
       tier=ssm.ParameterTier.STANDARD,
