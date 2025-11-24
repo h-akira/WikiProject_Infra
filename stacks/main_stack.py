@@ -7,7 +7,6 @@ from aws_cdk import (
   aws_iam as iam,
   RemovalPolicy,
   CfnOutput,
-  Duration,
   Tags,
   Fn,
 )
@@ -76,32 +75,26 @@ class MainStack(Stack):
       protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
     )
 
-    # CloudFront distribution
+    # CloudFront distribution for Django
+    # Default: API Gateway (Django serves all pages)
+    # /static/*: S3 (static files like CSS, JS, images)
     distribution = cloudfront.Distribution(
       self, "Distribution",
       default_behavior=cloudfront.BehaviorOptions(
-        origin=s3_origin,
+        origin=api_origin,
         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+        origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         compress=True,
-        allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
       ),
       additional_behaviors={
-        "/accounts/*": cloudfront.BehaviorOptions(
-          origin=api_origin,
+        "/static/*": cloudfront.BehaviorOptions(
+          origin=s3_origin,
           viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-          origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
           compress=True,
-          allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-        ),
-        "/api/*": cloudfront.BehaviorOptions(
-          origin=api_origin,
-          viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-          origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-          compress=True,
-          allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
+          allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         ),
       },
       domain_names=[domain_name],
@@ -110,15 +103,6 @@ class MainStack(Stack):
       enable_ipv6=True,
       http_version=cloudfront.HttpVersion.HTTP2,
       price_class=cloudfront.PriceClass.PRICE_CLASS_ALL,
-      default_root_object="index.html",
-      error_responses=[
-        cloudfront.ErrorResponse(
-          http_status=404,
-          response_http_status=200,
-          response_page_path="/index.html",
-          ttl=Duration.seconds(300),
-        ),
-      ],
     )
 
     # Grant CloudFront access to S3 bucket
